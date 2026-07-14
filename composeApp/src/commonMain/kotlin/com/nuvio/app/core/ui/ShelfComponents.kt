@@ -573,10 +573,12 @@ internal fun Modifier.posterCardClickable(
     zoomImageUrl: String? = null,
     zoomCornerRadius: Dp = NuvioTokens.Radius.poster,
     hoverScaleEnabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
 ): Modifier {
     if (onClick == null && onLongClick == null) return this
     val bounds = remember { mutableStateOf<Rect?>(null) }
-    val interactionSource = remember { MutableInteractionSource() }
+    val fallbackInteractionSource = remember { MutableInteractionSource() }
+    val resolvedInteractionSource = interactionSource ?: fallbackInteractionSource
     val handleLongClick = onLongClick?.let { longClick ->
         {
             bounds.value?.takeIf { zoomImageUrl != null }?.let { cardBounds ->
@@ -595,10 +597,10 @@ internal fun Modifier.posterCardClickable(
         .onGloballyPositioned { coordinates -> bounds.value = coordinates.unclippedBoundsInRoot() }
         .desktopPosterHoverScale(
             enabled = hoverScaleEnabled,
-            interactionSource = interactionSource,
+            interactionSource = resolvedInteractionSource,
         )
         .combinedClickable(
-            interactionSource = interactionSource,
+            interactionSource = resolvedInteractionSource,
             indication = null,
             onClick = { onClick?.invoke() },
             onLongClick = handleLongClick,

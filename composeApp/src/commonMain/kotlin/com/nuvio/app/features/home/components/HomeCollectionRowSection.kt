@@ -1,5 +1,8 @@
 package com.nuvio.app.features.home.components
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,6 +39,7 @@ import com.nuvio.app.features.collection.Collection
 import com.nuvio.app.features.collection.CollectionFolder
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.PosterShape
+import com.nuvio.app.isDesktop
 
 @Composable
 fun HomeCollectionRowSection(
@@ -106,6 +110,10 @@ private fun CollectionFolderCard(
     onClick: (() -> Unit)? = null,
 ) {
     val posterCardStyle = rememberPosterCardStyleUiState()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val isDesktopGifActive = !isDesktop || isHovered || isFocused
     val basePosterWidthDp = desktopCatalogShelfPosterBaseWidthDp(posterCardStyle.widthDp)
     val isLandscapeMode = posterCardStyle.catalogLandscapeModeEnabled
     val shape = if (isLandscapeMode) PosterShape.Landscape else folder.posterShape
@@ -129,13 +137,23 @@ private fun CollectionFolderCard(
 
     Column(
         modifier = Modifier
-            .posterCardClickable(onClick = onClick, onLongClick = null)
+            .posterCardClickable(
+                onClick = onClick,
+                onLongClick = null,
+                interactionSource = interactionSource,
+            )
             .then(modifier)
             .width(cardWidth),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         val shapeCorner = RoundedCornerShape(posterCardStyle.cornerRadiusDp.dp)
-        val imageUrl = collectionFolderCardImageUrl(folder)
+        // __NUVIO_DESKTOP_FOCUS_ONLY_COLLECTION_GIF_V1__
+        // Desktop mirrors the TV behaviour: only the hovered/focused folder uses its GIF.
+        // Unfocused folders use their static cover, preventing every GIF decoding at once.
+        val imageUrl = collectionFolderCardImageUrl(
+            folder = folder,
+            allowFocusGif = animateGifs && isDesktopGifActive,
+        )
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -159,7 +177,9 @@ private fun CollectionFolderCard(
                             contentDescription = folder.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
-                            animateIfPossible = animateGifs && isAnimatedCollectionFolderImage(folder, imageUrl),
+                            animateIfPossible = animateGifs &&
+                                isDesktopGifActive &&
+                                isAnimatedCollectionFolderImage(folder, imageUrl),
                         )
                     }
                     !folder.coverEmoji.isNullOrBlank() -> {
@@ -193,11 +213,24 @@ private fun CollectionFolderCard(
     }
 }
 
-private fun collectionFolderCardImageUrl(folder: CollectionFolder): String? {
-    return if (folder.mobileFocusGifEnabled) {
-        firstNonBlank(folder.focusGifUrl, folder.coverImageUrl)
+private fun collectionFolderCardImageUrl(
+    folder: CollectionFolder,
+    allowFocusGif: Boolean,
+): String? {
+    if (!folder.mobileFocusGifEnabled) {
+        return firstNonBlank(folder.coverImageUrl)
+    }
+
+    return if (isDesktop) {
+        if (allowFocusGif) {
+            firstNonBlank(folder.focusGifUrl, folder.coverImageUrl)
+        } else {
+            // Deliberately do not fall back to the GIF while inactive.
+            // A missing cover will show the folder's emoji/title until focused.
+            firstNonBlank(folder.coverImageUrl)
+        }
     } else {
-        firstNonBlank(folder.coverImageUrl)
+        firstNonBlank(folder.focusGifUrl, folder.coverImageUrl)
     }
 }
 
