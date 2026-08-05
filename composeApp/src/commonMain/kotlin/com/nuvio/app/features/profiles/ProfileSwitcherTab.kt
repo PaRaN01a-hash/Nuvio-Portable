@@ -1419,11 +1419,13 @@ fun ActiveProfileMiniAvatar(
         contentAlignment = Alignment.Center,
     ) {
         if (avatarImageUrl != null) {
-            AsyncImage(
-                model = avatarImageUrl,
+            com.nuvio.app.features.home.components.CollectionCardRemoteImage(
+                imageUrl = avatarImageUrl,
                 contentDescription = profile.name,
+                fallbackImageUrl = null,
                 modifier = Modifier.size(size.dp).clip(tokens.shapes.avatar),
                 contentScale = ContentScale.Crop,
+                animateIfPossible = true,
             )
         } else if (profile.name.isNotBlank()) {
             Text(
