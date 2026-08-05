@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import com.nuvio.app.core.ui.FullscreenActionButton
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -313,6 +314,16 @@ fun AuthScreen(
                 }
             }
         }
+
+        FullscreenActionButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = statusBarTop + 24.dp, end = 32.dp),
+            buttonSize = 48.dp,
+            iconSize = 24.dp,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
