@@ -12,6 +12,7 @@ import coil3.request.ImageRequest
 internal actual fun CollectionCardRemoteImage(
     imageUrl: String,
     contentDescription: String,
+    fallbackImageUrl: String?,
     modifier: Modifier,
     contentScale: ContentScale,
     animateIfPossible: Boolean,

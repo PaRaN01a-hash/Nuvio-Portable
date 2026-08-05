@@ -67,6 +67,7 @@ private class GifImageViewHolder {
 internal actual fun CollectionCardRemoteImage(
     imageUrl: String,
     contentDescription: String,
+    fallbackImageUrl: String?,
     modifier: Modifier,
     contentScale: ContentScale,
     animateIfPossible: Boolean,

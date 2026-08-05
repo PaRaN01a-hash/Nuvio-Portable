@@ -1,6 +1,8 @@
 package com.nuvio.app.features.home.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +27,8 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.URL
+import java.util.Collections
+import java.util.LinkedHashMap
 import javax.imageio.ImageIO
 import javax.imageio.metadata.IIOMetadata
 import javax.imageio.metadata.IIOMetadataNode
@@ -48,54 +52,99 @@ private data class GifFrameMeta(
 internal actual fun CollectionCardRemoteImage(
     imageUrl: String,
     contentDescription: String,
+    fallbackImageUrl: String?,
     modifier: Modifier,
     contentScale: ContentScale,
     animateIfPossible: Boolean,
 ) {
-    if (animateIfPossible && imageUrl.substringBefore('?').endsWith(".gif", ignoreCase = true)) {
-        val gif by produceState<DesktopGif?>(initialValue = null, imageUrl) {
-            value = withContext(Dispatchers.IO) {
+    val shouldAnimate =
+        animateIfPossible &&
+            imageUrl.substringBefore('?').endsWith(".gif", ignoreCase = true)
+
+    val gif by produceState<DesktopGif?>(
+        initialValue = desktopGifCache[imageUrl],
+        imageUrl,
+        shouldAnimate,
+    ) {
+        value = when {
+            !shouldAnimate -> null
+            desktopGifCache[imageUrl] != null -> desktopGifCache[imageUrl]
+            else -> withContext(Dispatchers.IO) {
                 runCatching { loadDesktopGif(imageUrl) }.getOrNull()
             }
         }
-        val loadedGif = gif
-        if (loadedGif != null && loadedGif.frames.isNotEmpty()) {
-            var frameIndex by remember(loadedGif) { mutableIntStateOf(0) }
-            LaunchedEffect(loadedGif) {
-                frameIndex = 0
-                while (true) {
-                    delay(loadedGif.delaysMs.getOrElse(frameIndex) { 100L })
-                    frameIndex = (frameIndex + 1) % loadedGif.frames.size
-                }
+    }
+
+    val loadedGif = gif
+    var frameIndex by remember(loadedGif) { mutableIntStateOf(0) }
+
+    LaunchedEffect(loadedGif, shouldAnimate) {
+        frameIndex = 0
+
+        if (
+            shouldAnimate &&
+            loadedGif != null &&
+            loadedGif.frames.isNotEmpty()
+        ) {
+            while (true) {
+                delay(loadedGif.delaysMs.getOrElse(frameIndex) { 100L })
+                frameIndex = (frameIndex + 1) % loadedGif.frames.size
             }
-            Image(
-                bitmap = loadedGif.frames[frameIndex],
-                contentDescription = contentDescription,
-                modifier = modifier,
-                contentScale = contentScale,
-            )
-            return
         }
     }
 
+    val staticUrl = fallbackImageUrl
+        ?.takeIf { it.isNotBlank() && it != imageUrl }
+        ?: imageUrl
+
     val context = LocalPlatformContext.current
-    val request = remember(context, imageUrl) {
+    val request = remember(context, staticUrl) {
         ImageRequest.Builder(context)
-            .data(imageUrl)
-            .memoryCacheKey("home-collection:$imageUrl")
-            .diskCacheKey(imageUrl)
+            .data(staticUrl)
+            .memoryCacheKey("home-collection:$staticUrl")
+            .diskCacheKey(staticUrl)
             .build()
     }
 
-    AsyncImage(
-        model = request,
-        contentDescription = contentDescription,
-        modifier = modifier,
-        contentScale = contentScale,
-    )
+    Box(modifier = modifier) {
+        AsyncImage(
+            model = request,
+            contentDescription = contentDescription,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = contentScale,
+        )
+
+        if (
+            shouldAnimate &&
+            loadedGif != null &&
+            loadedGif.frames.isNotEmpty()
+        ) {
+            Image(
+                bitmap = loadedGif.frames[frameIndex],
+                contentDescription = contentDescription,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = contentScale,
+            )
+        }
+    }
 }
 
+private const val DesktopGifCacheLimit = 12
+
+private val desktopGifCache = Collections.synchronizedMap(
+    object : LinkedHashMap<String, DesktopGif>(
+        DesktopGifCacheLimit,
+        0.75f,
+        true,
+    ) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, DesktopGif>?,
+        ): Boolean = size > DesktopGifCacheLimit
+    },
+)
 private fun loadDesktopGif(url: String): DesktopGif {
+    desktopGifCache[url]?.let { return it }
+
     val bytes = URL(url).openConnection().run {
         connectTimeout = 10_000
         readTimeout = 15_000
@@ -142,7 +191,9 @@ private fun loadDesktopGif(url: String): DesktopGif {
                 delays += metadata.delayMs.coerceAtLeast(20L)
                 previousMeta = metadata
             }
-            return DesktopGif(frames, delays)
+            return DesktopGif(frames, delays).also { decodedGif ->
+                desktopGifCache[url] = decodedGif
+            }
         } finally {
             reader.dispose()
         }
@@ -213,3 +264,4 @@ private fun BufferedImage.toImageBitmap(): ImageBitmap {
         image.close()
     }
 }
+

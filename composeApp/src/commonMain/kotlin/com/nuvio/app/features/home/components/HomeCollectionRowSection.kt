@@ -175,6 +175,10 @@ private fun CollectionFolderCard(
                         CollectionCardRemoteImage(
                             imageUrl = imageUrl,
                             contentDescription = folder.title,
+                            fallbackImageUrl = collectionFolderCardImageUrl(
+                                folder = folder,
+                                allowFocusGif = false,
+                            ),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                             animateIfPossible = animateGifs &&
