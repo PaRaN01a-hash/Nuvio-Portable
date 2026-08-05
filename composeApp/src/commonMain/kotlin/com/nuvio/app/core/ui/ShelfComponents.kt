@@ -105,6 +105,7 @@ fun <T> NuvioShelfSection(
         if (title.isNotBlank()) {
             NuvioShelfSectionHeader(
                 title = title,
+                scrollState = rowState,
                 modifier = Modifier.padding(horizontal = headerHorizontalPadding),
                 showAccent = showHeaderAccent,
                 onViewAllClick = onViewAllClick,
@@ -356,6 +357,7 @@ fun NuvioPosterCard(
 @Composable
 private fun NuvioShelfSectionHeader(
     title: String,
+    scrollState: LazyListState? = null,
     modifier: Modifier = Modifier,
     showAccent: Boolean = true,
     onViewAllClick: (() -> Unit)? = null,
@@ -392,16 +394,26 @@ private fun NuvioShelfSectionHeader(
             )
         }
         if (showAccent) {
-            Box(
-                modifier = Modifier
-                    .padding(top = NuvioTokens.Space.s6)
-                    .width(NuvioTokens.Space.s64 - NuvioTokens.Space.s4)
-                    .height(NuvioTokens.Space.s4)
-                    .background(
-                        color = tokens.colors.accent,
-                        shape = tokens.shapes.chip,
-                    ),
-            )
+            if (scrollState != null && isDesktop) {
+                NuvioDesktopHorizontalScrollbar(
+                    state = scrollState,
+                    modifier = Modifier
+                        .padding(top = NuvioTokens.Space.s6)
+                        .width(160.dp)
+                        .height(6.dp),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .padding(top = NuvioTokens.Space.s6)
+                        .width(NuvioTokens.Space.s64 - NuvioTokens.Space.s4)
+                        .height(NuvioTokens.Space.s4)
+                        .background(
+                            color = tokens.colors.accent,
+                            shape = tokens.shapes.chip,
+                        ),
+                )
+            }
         }
     }
 }

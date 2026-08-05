@@ -7,6 +7,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
+internal actual fun NuvioDesktopHorizontalScrollbar(
+    state: LazyListState,
+    modifier: Modifier,
+) = Unit
+
+@Composable
 internal actual fun NuvioDesktopVerticalScrollbar(
     state: LazyListState,
     modifier: Modifier,
