@@ -445,13 +445,13 @@ fun HomeScreen(
         buildHomeCatalogRefreshSignature(enabledAddons)
     }
 
-    LaunchedEffect(catalogRefreshKey) {
+    LaunchedEffect(activeProfileId, catalogRefreshKey) {
         if (catalogRefreshKey.isEmpty()) return@LaunchedEffect
         HomeCatalogSettingsRepository.syncCatalogs(enabledAddons)
-        HomeRepository.refresh(enabledAddons)
+        HomeRepository.refresh(enabledAddons, force = true)
     }
 
-    LaunchedEffect(collections, enabledAddons) {
+    LaunchedEffect(activeProfileId, collections, enabledAddons) {
         HomeCatalogSettingsRepository.syncCollections(collections)
         HomeRepository.applyCurrentSettings()
         if (collections.any { it.folders.isNotEmpty() }) {

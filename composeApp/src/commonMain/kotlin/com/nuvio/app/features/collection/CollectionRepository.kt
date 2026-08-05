@@ -66,6 +66,7 @@ object CollectionRepository {
         hasLoaded = false
         _collections.value = emptyList()
         rawCollectionsJson = JsonArray(emptyList())
+        initialize()
     }
 
     fun clearLocalState() {
