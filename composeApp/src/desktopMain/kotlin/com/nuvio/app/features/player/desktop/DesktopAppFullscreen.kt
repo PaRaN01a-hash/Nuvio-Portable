@@ -77,7 +77,7 @@ internal class DesktopAppFullscreenController {
 
     fun toggle(window: Window, windowState: WindowState) {
         if (DesktopHostOs.current == DesktopHostOs.WINDOWS) {
-            toggleWindowsFullscreen(window)
+            toggleWindowsFullscreen(window, windowState)
         } else {
             toggleComposeFullscreen(windowState)
         }
@@ -122,9 +122,10 @@ internal class DesktopAppFullscreenController {
         }
     }
 
-    private fun toggleWindowsFullscreen(window: Window) {
+    private fun toggleWindowsFullscreen(window: Window, windowState: WindowState) {
         if (windowsFullscreenState?.window === window) {
             exitWindowsFullscreen(window)
+            windowState.placement = WindowPlacement.Maximized
         } else {
             enterWindowsFullscreen(window)
         }

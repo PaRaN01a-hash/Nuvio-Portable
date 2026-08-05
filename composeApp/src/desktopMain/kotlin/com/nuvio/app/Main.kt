@@ -45,7 +45,10 @@ fun main(args: Array<String>) {
                 ?: System.getenv("NUVIO_DESKTOP_SMOKE_PLAYER_URL")
             )
             ?.takeIf { it.isNotBlank() }
-        val wasFullscreenOnLastExit = remember { DesktopWindowModeStorage.loadWasFullscreen() }
+        val wasFullscreenOnLastExit = remember {
+            if (DesktopHostOs.current == DesktopHostOs.WINDOWS) true
+            else DesktopWindowModeStorage.loadWasFullscreen()
+        }
         val savedGeometry = remember { DesktopWindowModeStorage.loadWindowedGeometry() }
         val windowState = rememberWindowState(
             width = savedGeometry?.width?.dp ?: 1280.dp,
@@ -54,10 +57,10 @@ fun main(args: Array<String>) {
                 ?: WindowPosition.PlatformDefault,
             // Windows fullscreen is emulated natively (see DesktopAppFullscreenController)
             // rather than driven by WindowPlacement, so it's restored separately below.
-            placement = if (wasFullscreenOnLastExit && DesktopHostOs.current != DesktopHostOs.WINDOWS) {
-                WindowPlacement.Fullscreen
-            } else {
-                WindowPlacement.Floating
+            placement = when {
+                DesktopHostOs.current == DesktopHostOs.WINDOWS -> WindowPlacement.Maximized
+                wasFullscreenOnLastExit -> WindowPlacement.Fullscreen
+                else -> WindowPlacement.Floating
             },
         )
         val fullscreenController = remember { DesktopAppFullscreenController() }
