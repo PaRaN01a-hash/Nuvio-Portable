@@ -1,6 +1,7 @@
 package com.nuvio.app.core.network
 
 import com.nuvio.app.core.build.AppVersionConfig
+import com.nuvio.app.core.auth.configurePlatformAuthStorage
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
@@ -47,7 +48,7 @@ object SupabaseProvider {
                     headers.append(HttpHeaders.UserAgent, userAgent)
                 }
             }
-            install(Auth)
+            install(Auth) { configurePlatformAuthStorage() }
             install(Postgrest)
             install(Functions)
             install(Realtime)
