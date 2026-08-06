@@ -1,6 +1,11 @@
 package com.nuvio.app.features.downloads
 
 import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +19,9 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
 object DownloadsRepository {
-    private const val MaxDownloadAttempts = 3
+    private const val MaxDownloadAttempts = 8
+    private const val DownloadRetryDelayMillis = 3_000L
+    private val downloadRetryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val _uiState = MutableStateFlow(DownloadsUiState())
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
@@ -153,6 +160,9 @@ object DownloadsRepository {
             episodeNumber = episodeNumber,
             episodeTitle = episodeTitle,
             fallbackTitle = stream.streamLabel,
+            sourceFileName = stream.behaviorHints.filename
+                ?: stream.clientResolve?.filename
+                ?: stream.streamSubtitle?.lineSequence()?.firstOrNull(),
             sourceUrl = sourceUrl,
             nowEpochMs = now,
         )
@@ -335,7 +345,13 @@ object DownloadsRepository {
                 activeHandles.remove(item.id)
                 val current = _uiState.value.items.firstOrNull { it.id == item.id }
                 if (current?.status == DownloadStatus.Downloading && attempt < MaxDownloadAttempts) {
-                    startDownload(current, attempt + 1)
+                    downloadRetryScope.launch {
+                        delay(DownloadRetryDelayMillis)
+                        val retryItem = _uiState.value.items.firstOrNull { it.id == item.id }
+                        if (retryItem?.status == DownloadStatus.Downloading && !activeHandles.containsKey(item.id)) {
+                            startDownload(retryItem, attempt + 1)
+                        }
+                    }
                     return@onFailure
                 }
                 mutateItem(item.id) { current ->
@@ -501,6 +517,7 @@ private fun buildFileName(
     episodeNumber: Int?,
     episodeTitle: String?,
     fallbackTitle: String,
+    sourceFileName: String?,
     sourceUrl: String,
     nowEpochMs: Long,
 ): String {
@@ -520,7 +537,9 @@ private fun buildFileName(
         title.ifBlank { fallbackTitle }
     }
 
-    val extension = sourceUrl.fileExtensionFromUrl()
+    val extension = sourceFileName.mediaFileExtensionOrNull()
+        ?: sourceUrl.mediaFileExtensionOrNull()
+        ?: "bin"
     return buildString {
         append(baseTitle.sanitizeFileName().ifBlank { "download" }.take(92))
         append('_')
@@ -533,18 +552,18 @@ private fun buildFileName(
 private fun String.sanitizeFileName(): String =
     trim().replace(Regex("[^A-Za-z0-9._ -]"), "_")
 
-private fun String.fileExtensionFromUrl(): String {
-    val withoutQuery = substringBefore('?').substringBefore('#')
+private fun String?.mediaFileExtensionOrNull(): String? {
+    val candidate = this?.trim()?.takeIf { it.isNotBlank() } ?: return null
+    val withoutQuery = candidate.substringBefore('?').substringBefore('#')
     val suffix = withoutQuery.substringAfterLast('.', missingDelimiterValue = "")
+        .substringBeforeAnyWhitespace()
         .lowercase()
         .trim()
-
-    return if (suffix.length in 2..5 && suffix.all { it.isLetterOrDigit() }) {
-        suffix
-    } else {
-        "mp4"
-    }
+    return suffix.takeIf { it in setOf("mkv", "mp4", "m4v", "avi", "mov", "webm", "ts", "m2ts") }
 }
+
+private fun String.substringBeforeAnyWhitespace(): String =
+    takeWhile { !it.isWhitespace() }
 
 private fun String.isSupportedDownloadUrl(): Boolean {
     val normalized = trim().lowercase()
