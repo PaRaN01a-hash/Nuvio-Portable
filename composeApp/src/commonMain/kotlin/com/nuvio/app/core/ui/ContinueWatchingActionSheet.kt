@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
@@ -34,6 +35,7 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.cw_action_go_to_details
 import nuvio.composeapp.generated.resources.cw_action_remove
 import nuvio.composeapp.generated.resources.cw_action_start_from_beginning
+import nuvio.composeapp.generated.resources.episode_download
 import nuvio.composeapp.generated.resources.play_manually
 import org.jetbrains.compose.resources.stringResource
 
@@ -46,6 +48,7 @@ fun NuvioContinueWatchingActionSheet(
     onDismiss: () -> Unit,
     onOpenDetails: () -> Unit,
     onStartFromBeginning: (() -> Unit)? = null,
+    onDownloadEpisode: (() -> Unit)? = null,
     onPlayManually: (() -> Unit)? = null,
     onRemove: () -> Unit,
 ) {
@@ -81,6 +84,14 @@ fun NuvioContinueWatchingActionSheet(
                     icon = Icons.Default.Info,
                     title = stringResource(Res.string.cw_action_go_to_details),
                     onClick = { dismissAfter(onOpenDetails) },
+                )
+            }
+            if (onDownloadEpisode != null) {
+                NuvioBottomSheetDivider()
+                NuvioBottomSheetActionRow(
+                    icon = Icons.Default.Download,
+                    title = stringResource(Res.string.episode_download),
+                    onClick = { dismissAfter(onDownloadEpisode) },
                 )
             }
             if (showManualPlayOption && onPlayManually != null) {

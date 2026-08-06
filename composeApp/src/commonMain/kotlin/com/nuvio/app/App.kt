@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.filled.Info
@@ -1599,12 +1600,13 @@ private fun MainAppContent(
             resumePositionMs: Long?,
             resumeProgressFraction: Float?,
             manualSelection: Boolean,
+            downloadSelection: Boolean = false,
             startFromBeginning: Boolean,
         ) {
             val targetResumePositionMs = if (startFromBeginning) 0L else (resumePositionMs ?: 0L)
             val targetResumeProgressFraction = if (startFromBeginning) null else resumeProgressFraction
 
-            if (!manualSelection && AppFeaturePolicy.downloadsEnabled) {
+            if (!manualSelection && !downloadSelection && AppFeaturePolicy.downloadsEnabled) {
                 val downloadedItem = DownloadsRepository.findPlayableDownload(
                     parentMetaId = parentMetaId,
                     seasonNumber = seasonNumber,
@@ -1668,6 +1670,7 @@ private fun MainAppContent(
                     resumePositionMs = if (startFromBeginning) 0L else resumePositionMs,
                     resumeProgressFraction = targetResumeProgressFraction,
                     manualSelection = manualSelection,
+                    downloadSelection = downloadSelection,
                     startFromBeginning = startFromBeginning,
                 ),
             )
@@ -1718,6 +1721,30 @@ private fun MainAppContent(
                     resumePositionMs = resumePositionMs,
                     resumeProgressFraction = null,
                     manualSelection = true,
+                    startFromBeginning = false,
+                )
+            }
+
+        val onDownload: (String, String, String, String, String, String?, String?, String?, Int?, Int?, String?, String?, String?, Long?) -> Unit =
+            { type, videoId, parentMetaId, parentMetaType, title, logo, poster, background, seasonNumber, episodeNumber, episodeTitle, episodeThumbnail, pauseDescription, resumePositionMs ->
+                launchPlaybackWithDownloadPreference(
+                    type = type,
+                    videoId = videoId,
+                    parentMetaId = parentMetaId,
+                    parentMetaType = parentMetaType,
+                    title = title,
+                    logo = logo,
+                    poster = poster,
+                    background = background,
+                    seasonNumber = seasonNumber,
+                    episodeNumber = episodeNumber,
+                    episodeTitle = episodeTitle,
+                    episodeThumbnail = episodeThumbnail,
+                    pauseDescription = pauseDescription,
+                    resumePositionMs = resumePositionMs,
+                    resumeProgressFraction = null,
+                    manualSelection = true,
+                    downloadSelection = true,
                     startFromBeginning = false,
                 )
             }
@@ -1842,6 +1869,24 @@ private fun MainAppContent(
             openContinueWatching(item, true, false)
         }
 
+        val onContinueWatchingDownload: (ContinueWatchingItem) -> Unit = { item ->
+            onDownload(
+                item.parentMetaType,
+                item.videoId,
+                item.parentMetaId,
+                item.parentMetaType,
+                item.title,
+                item.logo,
+                item.poster,
+                item.background,
+                item.seasonNumber,
+                item.episodeNumber,
+                item.episodeTitle,
+                item.episodeThumbnail,
+                item.pauseDescription,
+                item.resumePositionMs,
+            )
+        }
         val onContinueWatchingRemove: (ContinueWatchingItem) -> Unit = { item ->
             if (item.isNextUp) {
                 ContinueWatchingPreferencesRepository.addDismissedNextUpKey(
@@ -2141,6 +2186,7 @@ private fun MainAppContent(
                         onBack = onBack,
                         onPlay = onPlay,
                         onPlayManually = onPlayManually,
+                        onDownload = onDownload,
                         onOpenMeta = { preview ->
                             coroutineScope.launch {
                                 val resolvedId = if (preview.id.startsWith("tmdb:")) {
@@ -2838,6 +2884,7 @@ private fun MainAppContent(
                             resumePositionMs = launch.resumePositionMs,
                             resumeProgressFraction = launch.resumeProgressFraction,
                             manualSelection = launch.manualSelection,
+                            downloadSelection = launch.downloadSelection,
                             startFromBeginning = launch.startFromBeginning,
                             onStreamSelected = { stream, resolvedResumePositionMs, resolvedResumeProgressFraction ->
                                 openSelectedStream(
@@ -3417,6 +3464,13 @@ private fun MainAppContent(
                                         ),
                                     )
                                 }
+                                add(
+                                    PosterZoomOverlayAction(
+                                        icon = Icons.Default.Download,
+                                        label = stringResource(Res.string.episode_download),
+                                        onSelected = { onContinueWatchingDownload(item) },
+                                    ),
+                                )
                                 if (showManualPlayOption) {
                                     add(
                                         PosterZoomOverlayAction(
@@ -3473,6 +3527,8 @@ private fun MainAppContent(
                 onStartFromBeginning = selectedContinueWatchingForActions
                     ?.takeIf { !it.isNextUp }
                     ?.let { item -> { onContinueWatchingStartFromBeginning(item) } },
+                onDownloadEpisode = selectedContinueWatchingForActions
+                    ?.let { item -> { onContinueWatchingDownload(item) } },
                 onPlayManually = selectedContinueWatchingForActions
                     ?.let { item -> { onContinueWatchingPlayManually(item) } },
                 onRemove = {
