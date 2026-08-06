@@ -525,11 +525,13 @@ private fun ProfileAvatarCard(
                 contentAlignment = Alignment.Center,
             ) {
                 if (avatarImageUrl != null) {
-                    AsyncImage(
-                        model = avatarImageUrl,
+                    com.nuvio.app.features.home.components.CollectionCardRemoteImage(
+                        imageUrl = avatarImageUrl,
                         contentDescription = avatarItem?.displayName ?: profile.name,
+                        fallbackImageUrl = null,
                         modifier = Modifier.size(100.dp).clip(CircleShape),
                         contentScale = ContentScale.Crop,
+                        animateIfPossible = true,
                     )
                 } else if (profile.name.isNotBlank()) {
                     Text(
