@@ -571,6 +571,7 @@ fun App(
         var isNewProfile by remember { mutableStateOf(false) }
         var autoSkipProfileSelection by rememberSaveable { mutableStateOf(false) }
         var pendingProfileSwitch by remember { mutableStateOf<PendingProfileSwitch?>(null) }
+        var returnFromOfflineDownloadsToProfiles by rememberSaveable { mutableStateOf(false) }
 
         LaunchedEffect(gateScreen, onAppReady) {
             if (gateScreen != AppGateScreen.Main.name) {
@@ -773,6 +774,7 @@ fun App(
                             gateScreen = AppGateScreen.ProfileEdit.name
                         },
                         onWatchOffline = {
+                            returnFromOfflineDownloadsToProfiles = true
                             handleAppUrl(buildDownloadsDeepLinkUrl())
                             gateScreen = AppGateScreen.Main.name
                         },
@@ -811,6 +813,12 @@ fun App(
                         onActivate = onActivate,
                         onTabTitles = onTabTitles,
                         nativeProfileSwitcherController = nativeProfileSwitcherController,
+                        returnFromOfflineDownloadsToProfiles = returnFromOfflineDownloadsToProfiles,
+                        onOfflineDownloadsBack = {
+                            returnFromOfflineDownloadsToProfiles = false
+                            autoSkipProfileSelection = false
+                            gateScreen = AppGateScreen.ProfileSelection.name
+                        },
                         onRootContentReady = { ready ->
                             onAppReady?.invoke(
                                 ready && gateScreen == AppGateScreen.Main.name,
@@ -843,6 +851,8 @@ private fun MainAppContent(
     onActivate: ((AppScreenTab) -> Unit)? = null,
     onTabTitles: ((home: String, search: String, library: String, profile: String) -> Unit)? = null,
     nativeProfileSwitcherController: NativeProfileSwitcherController? = null,
+    returnFromOfflineDownloadsToProfiles: Boolean = false,
+    onOfflineDownloadsBack: () -> Unit = {},
     onRootContentReady: ((Boolean) -> Unit)? = null,
     onSwitchProfile: () -> Unit = {},
 ) {
@@ -3164,10 +3174,15 @@ private fun MainAppContent(
                     )
                 }
                 entry<DownloadsSettingsRoute> { route ->
-                    val onBack = rememberGuardedPopBackStack(
+                    val guardedOnBack = rememberGuardedPopBackStack(
                         navController = navController,
                         route = route,
                     )
+                    val onBack = if (returnFromOfflineDownloadsToProfiles) {
+                        onOfflineDownloadsBack
+                    } else {
+                        guardedOnBack
+                    }
                     DownloadsScreen(
                         onBack = onBack,
                         onOpenDownload = ::openDownloadedItem,
