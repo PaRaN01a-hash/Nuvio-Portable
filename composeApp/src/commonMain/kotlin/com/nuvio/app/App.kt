@@ -668,17 +668,13 @@ fun App(
             val allowCachedProfileAccess =
                 hasCachedProfileAccess &&
                     (
-                        networkStatusUiState.condition != NetworkCondition.Online ||
-                            gateScreen != AppGateScreen.Auth.name
+                        networkStatusUiState.condition == NetworkCondition.NoInternet ||
+                            networkStatusUiState.condition == NetworkCondition.ServersUnreachable
                     )
 
             when (authState) {
                 is AuthState.Loading -> {
-                    if (hasCachedProfileAccess) {
-                        enterProfileGate(cachedProfiles, syncOnEnter = false)
-                    } else {
-                        gateScreen = AppGateScreen.Loading.name
-                    }
+                    gateScreen = AppGateScreen.Loading.name
                 }
                 is AuthState.Unauthenticated -> {
                     if (allowCachedProfileAccess) {
