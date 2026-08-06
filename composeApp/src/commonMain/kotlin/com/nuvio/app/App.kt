@@ -3658,9 +3658,8 @@ private fun rememberGuardedPopBackStack(
     return remember(navController, route, popHandled, beforePop) {
         {
             if (!popHandled && navController.currentRoute == route) {
-                popHandled = true
                 beforePop()
-                navController.popBackStack(expectedRoute = route)
+                popHandled = navController.popBackStack(expectedRoute = route)
             }
         }
     }
