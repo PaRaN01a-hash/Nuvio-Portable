@@ -3,6 +3,7 @@ package com.nuvio.app.features.settings
 import com.nuvio.app.core.build.AppFeaturePolicy
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +49,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -1807,12 +1818,53 @@ private fun LanguageSelectionDialog(
     onSelect: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val selectedIndex = options.indexOfFirst { it.value == selectedValue }.coerceAtLeast(0)
+    var highlightedIndex by remember(options, selectedValue) { mutableStateOf(selectedIndex) }
+    val listState = rememberLazyListState()
+    val focusRequester = remember { FocusRequester() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(options, selectedValue) {
+        focusRequester.requestFocus()
+        if (options.isNotEmpty()) {
+            listState.scrollToItem(highlightedIndex.coerceIn(options.indices))
+        }
+    }
+
     BasicAlertDialog(
         onDismissRequest = onDismiss,
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .focusable()
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown || options.isEmpty()) {
+                        return@onPreviewKeyEvent false
+                    }
+                    when (event.key) {
+                        Key.DirectionDown -> {
+                            highlightedIndex = (highlightedIndex + 1).coerceAtMost(options.lastIndex)
+                            scope.launch { listState.animateScrollToItem(highlightedIndex) }
+                            true
+                        }
+                        Key.DirectionUp -> {
+                            highlightedIndex = (highlightedIndex - 1).coerceAtLeast(0)
+                            scope.launch { listState.animateScrollToItem(highlightedIndex) }
+                            true
+                        }
+                        Key.Enter -> {
+                            onSelect(options[highlightedIndex].value)
+                            true
+                        }
+                        Key.Escape -> {
+                            onDismiss()
+                            true
+                        }
+                        else -> false
+                    }
+                },
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
         ) {
@@ -1828,25 +1880,35 @@ private fun LanguageSelectionDialog(
                 )
 
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 420.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(options) { option ->
+                    itemsIndexed(options) { index, option ->
                         val isSelected = option.value == selectedValue
-                        val containerColor = if (isSelected) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        val isHighlighted = index == highlightedIndex
+                        val containerColor = when {
+                            isHighlighted -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                         }
 
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onSelect(option.value) },
+                                .clickable {
+                                    highlightedIndex = index
+                                    onSelect(option.value)
+                                },
                             shape = RoundedCornerShape(12.dp),
                             color = containerColor,
+                            border = if (isHighlighted) {
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                            } else {
+                                null
+                            },
                         ) {
                             Row(
                                 modifier = Modifier
