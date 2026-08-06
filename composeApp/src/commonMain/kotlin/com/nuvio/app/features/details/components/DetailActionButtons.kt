@@ -80,7 +80,7 @@ fun DetailActionButtons(
 
     Box(
         modifier = modifier
-            .widthIn(max = if (isTablet) 520.dp else 420.dp)
+            .widthIn(max = if (isTablet) 520.dp else 500.dp)
             .fillMaxWidth()
             .height(buttonHeight),
     ) {

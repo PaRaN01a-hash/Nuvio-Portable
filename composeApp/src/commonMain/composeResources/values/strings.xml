@@ -2027,4 +2027,5 @@
         <item quantity="one">%d title</item>
         <item quantity="other">%d titles</item>
     </plurals>
+    <string name="episode_download">Download Episode</string>
 </resources>

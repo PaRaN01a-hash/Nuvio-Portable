@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +54,7 @@ import nuvio.composeapp.generated.resources.hero_add_to_library
 import nuvio.composeapp.generated.resources.hero_mark_unwatched
 import nuvio.composeapp.generated.resources.hero_mark_watched
 import nuvio.composeapp.generated.resources.hero_remove_from_library
+import nuvio.composeapp.generated.resources.streams_download_file
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -76,6 +78,7 @@ fun DesktopDetailHero(
     onPlayClick: () -> Unit,
     onPlayLongClick: (() -> Unit)?,
     onWatchedClick: () -> Unit,
+    onDownloadClick: () -> Unit,
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
 ) {
@@ -275,6 +278,11 @@ fun DesktopDetailHero(
                         isActive = isSaved,
                         onClick = onSaveClick,
                         onLongClick = onSaveLongClick,
+                    ),
+                    DetailSecondaryAction(
+                        label = stringResource(Res.string.streams_download_file),
+                        icon = Icons.Rounded.Download,
+                        onClick = onDownloadClick,
                     ),
                 ),
                 isTablet = true,
