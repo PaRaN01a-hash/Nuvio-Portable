@@ -566,6 +566,9 @@ private fun PlayerScreenRuntime.handlePlayerControlsAction(action: PlayerControl
         PlayerControlsAction.RevealLockedOverlay -> revealLockedOverlay()
         PlayerControlsAction.Back -> {
             flushWatchProgress()
+            playerController?.release()
+            playerController = null
+            playerControllerSourceUrl = null
             args.onBack()
         }
         PlayerControlsAction.TogglePlayback -> {

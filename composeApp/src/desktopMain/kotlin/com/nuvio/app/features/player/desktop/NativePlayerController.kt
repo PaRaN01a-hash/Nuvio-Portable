@@ -206,6 +206,11 @@ internal class NativePlayerController(
         if (type.shouldLogNativeControlEvent()) {
             log.d { "event received handle=$handle type=$type value=$value" }
         }
+        if (type == "back" && isDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))) {
+            toggleDesktopAppFullscreen(SwingUtilities.getWindowAncestor(host))
+            onDesktopFullscreenChanged()
+        }
+
         when (type) {
             "cursorActivity" -> host.noteCursorActivity()
             "scrubChange" -> {
@@ -337,6 +342,10 @@ internal class NativePlayerController(
                 playbackSpeed = NativePlayerBridge.speed(current),
             )
         }.getOrDefault(PlayerPlaybackSnapshot(isLoading = true))
+    }
+
+    override fun release() {
+        dispose()
     }
 
     fun dispose() {
