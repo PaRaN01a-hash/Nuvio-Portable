@@ -72,15 +72,32 @@ internal actual object DownloadsPlatformDownloader {
                 var downloadedBytes = startingBytes
                 onProgress(downloadedBytes, totalBytes)
 
+                var lastProgressBytes = downloadedBytes
+                var lastProgressNanos = System.nanoTime()
+                val progressByteInterval = 512L * 1024L
+                val progressTimeIntervalNanos = 500_000_000L
+
                 response.body().use { input ->
                     FileOutputStream(tempFile, appendToTemp).use { output ->
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        val buffer = ByteArray(256 * 1024)
                         while (true) {
                             ensureActive()
                             val read = input.read(buffer)
                             if (read <= 0) break
                             output.write(buffer, 0, read)
                             downloadedBytes += read.toLong()
+
+                            val nowNanos = System.nanoTime()
+                            if (
+                                downloadedBytes - lastProgressBytes >= progressByteInterval ||
+                                nowNanos - lastProgressNanos >= progressTimeIntervalNanos
+                            ) {
+                                onProgress(downloadedBytes, totalBytes)
+                                lastProgressBytes = downloadedBytes
+                                lastProgressNanos = nowNanos
+                            }
+                        }
+                        if (downloadedBytes != lastProgressBytes) {
                             onProgress(downloadedBytes, totalBytes)
                         }
                         output.flush()
