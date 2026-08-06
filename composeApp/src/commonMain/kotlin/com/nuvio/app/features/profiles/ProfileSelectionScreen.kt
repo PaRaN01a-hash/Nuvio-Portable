@@ -64,6 +64,7 @@ import com.nuvio.app.isDesktop
 import com.nuvio.app.core.ui.NuvioAsyncImage as AsyncImage
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
+import com.nuvio.app.core.ui.FullscreenActionButton
 import com.nuvio.app.core.ui.ProfileMeshBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -141,6 +142,15 @@ fun ProfileSelectionScreen(
         val isTabletLayout = maxWidth >= 768.dp
 
         ProfileMeshBackground(profileColor = backgroundProfileColor)
+        FullscreenActionButton(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = statusBarTop + 24.dp, end = 32.dp),
+            buttonSize = 48.dp,
+            iconSize = 24.dp,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        )
 
         Column(
             modifier = Modifier
