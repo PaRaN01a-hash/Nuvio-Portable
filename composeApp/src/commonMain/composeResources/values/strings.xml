@@ -311,8 +311,8 @@
     <string name="collections_tab_all">All</string>
     <string name="collections_your_collections">Your Collections</string>
     <string name="compose_about_based_on_version_format">Based on Nuvio %1$s</string>
-    <string name="compose_about_made_with">Made with ❤️ by Tapframe and friends</string>
-    <string name="compose_about_version_format">Version %1$s (%2$s)</string>
+    <string name="compose_about_made_with">Nuvio Portable</string>
+    <string name="compose_about_version_format">Portable desktop fork</string>
     <string name="compose_action_off">Off</string>
     <string name="compose_action_on">On</string>
     <string name="compose_action_pause">Pause</string>
