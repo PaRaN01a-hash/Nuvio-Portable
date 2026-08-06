@@ -33,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
@@ -74,6 +75,8 @@ fun ProfileSelectionScreen(
     onProfileSelected: (NuvioProfile) -> Unit,
     onEditProfile: (NuvioProfile) -> Unit,
     onAddProfile: () -> Unit,
+    onAccountAction: () -> Unit,
+    onWatchOffline: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val authState by AuthRepository.state.collectAsStateWithLifecycle()
@@ -267,6 +270,7 @@ fun ProfileSelectionScreen(
             Box(
                 modifier = Modifier
                     .graphicsLayer { alpha = manageAlpha.value }
+                    .width(240.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(
                         if (isEditMode) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
@@ -281,19 +285,112 @@ fun ProfileSelectionScreen(
                     .clickable { isEditMode = !isEditMode }
                     .padding(horizontal = 24.dp, vertical = 10.dp),
             ) {
-                Text(
-                    text = if (isEditMode) {
-                        stringResource(Res.string.action_done)
-                    } else {
-                        stringResource(Res.string.profile_manage_profiles)
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (isEditMode) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Edit,
+                        contentDescription = null,
+                        tint = if (isEditMode) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEditMode) {
+                            stringResource(Res.string.action_done)
+                        } else {
+                            stringResource(Res.string.profile_manage_profiles)
+                        },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isEditMode) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
 
+            if (!isEditMode) {
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer { alpha = manageAlpha.value }
+                        .width(240.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.Transparent)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(24.dp),
+                        )
+                        .clickable(onClick = onWatchOffline)
+                        .padding(horizontal = 24.dp, vertical = 10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Download,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(Res.string.profile_watch_offline),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer { alpha = manageAlpha.value }
+                        .width(240.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.Transparent)
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(24.dp),
+                        )
+                        .clickable(onClick = onAccountAction)
+                        .padding(horizontal = 24.dp, vertical = 10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (authState is AuthState.Authenticated) {
+                                stringResource(Res.string.profile_use_another_account)
+                            } else {
+                                stringResource(Res.string.compose_auth_sign_in)
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(if (isTabletLayout) 0.dp else 32.dp))
         }
     }

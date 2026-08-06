@@ -100,6 +100,8 @@ import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.deeplink.AppDeepLink
 import com.nuvio.app.core.deeplink.AppDeepLinkRepository
+import com.nuvio.app.core.deeplink.buildDownloadsDeepLinkUrl
+import com.nuvio.app.core.deeplink.handleAppUrl
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.sync.AppForegroundMonitor
@@ -654,6 +656,8 @@ fun App(
             }
         }
 
+        val accountActionScope = rememberCoroutineScope()
+
         LaunchedEffect(authState, networkStatusUiState.condition, profileState.profiles) {
             if (gateScreen == AppGateScreen.ProfileSwitching.name) return@LaunchedEffect
 
@@ -771,6 +775,17 @@ fun App(
                             editingProfile = null
                             isNewProfile = true
                             gateScreen = AppGateScreen.ProfileEdit.name
+                        },
+                        onWatchOffline = {
+                            handleAppUrl(buildDownloadsDeepLinkUrl())
+                            gateScreen = AppGateScreen.Main.name
+                        },
+                        onAccountAction = {
+                            if (authState is AuthState.Authenticated) {
+                                accountActionScope.launch { AuthRepository.signOut() }
+                            } else {
+                                gateScreen = AppGateScreen.Auth.name
+                            }
                         },
                         modifier = Modifier.fillMaxSize(),
                     )

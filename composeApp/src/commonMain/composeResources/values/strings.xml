@@ -1355,6 +1355,7 @@
     <string name="profile_label_number">Profile %1$d</string>
     <string name="profile_loading_avatars">Loading avatars...</string>
     <string name="profile_manage_profiles">Manage Profiles</string>
+    <string name="profile_use_another_account">Use Another Account</string>
     <string name="profile_name_placeholder">Profile name</string>
     <string name="profile_new">New profile</string>
     <string name="profile_primary_addons_off">Primary addons off</string>
@@ -2027,5 +2028,6 @@
         <item quantity="one">%d title</item>
         <item quantity="other">%d titles</item>
     </plurals>
+    <string name="profile_watch_offline">Watch Offline</string>
     <string name="episode_download">Download Episode</string>
 </resources>
