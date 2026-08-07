@@ -382,6 +382,7 @@ const chromeInteractionSelector = [
   ".header-actions",
   ".center-controls",
   ".progress",
+  ".volume-control",
   ".locked-overlay",
   ".modal-layer",
   ".skip-prompt",
@@ -444,11 +445,14 @@ const volumeToastLabel = (fallbackDelta = 0) => {
   return fallbackDelta < 0 ? "Volume down" : "Volume up";
 };
 
+let rememberedNonZeroVolumeLevel = 1;
+
 const syncVolumeControl = () => {
   if (!volumeControl || !volumeSlider || !volumeIcon) return;
   const volumeLevel = state.volumeLevel;
   const hasLevel = typeof volumeLevel === "number" && Number.isFinite(volumeLevel);
   const clampedLevel = hasLevel ? Math.max(0, Math.min(1, volumeLevel)) : 1;
+  if (clampedLevel > 0) rememberedNonZeroVolumeLevel = clampedLevel;
   const percent = Math.round(clampedLevel * 100);
   const label = `Volume ${percent}%`;
   volumeControl.style.setProperty("--volume", `${percent}%`);
@@ -2443,6 +2447,18 @@ volumeSlider.addEventListener("input", () => {
   send("volumeChange", nextLevel);
 });
 
+volumeIcon.parentElement.addEventListener("click", event => {
+  event.stopPropagation();
+  noteChromeActivity();
+  const currentLevel = typeof state.volumeLevel === "number" && Number.isFinite(state.volumeLevel)
+    ? Math.max(0, Math.min(1, state.volumeLevel))
+    : 1;
+  const nextLevel = currentLevel > 0 ? 0 : rememberedNonZeroVolumeLevel;
+  state.volumeLevel = nextLevel;
+  syncVolumeControl();
+  send("volumeChange", nextLevel);
+});
+
 window.playerUpdate = update => {
   const durationMs = Math.round((Number(update.duration) || 0) * 1000);
   const positionMs = Math.round((Number(update.position) || 0) * 1000);
@@ -2506,7 +2522,7 @@ root.addEventListener("click", event => {
   if (event.target.closest("button,input")) return;
   window.clearTimeout(tapTimer);
   tapTimer = window.setTimeout(() => {
-    toggleChrome();
+    send("keyboardToggle", 0);
   }, 220);
 });
 
