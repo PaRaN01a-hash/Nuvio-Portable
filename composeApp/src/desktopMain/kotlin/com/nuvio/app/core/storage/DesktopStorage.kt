@@ -1,12 +1,11 @@
 package com.nuvio.app.core.storage
 
+import com.nuvio.app.core.portable.PortablePaths
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.Comparator
-import java.util.Locale
 import java.util.Properties
 import kotlin.io.path.exists
 
@@ -14,12 +13,20 @@ internal object DesktopStorage {
     private val json = Json { ignoreUnknownKeys = true }
     private val stores = mutableMapOf<String, Store>()
 
+    /**
+     * Portable desktop preferences live with the application rather than in the
+     * host computer's APPDATA/XDG/Application Support directory.
+     */
     val rootDir: Path by lazy {
-        resolveAppDataDir().also { Files.createDirectories(it) }
+        PortablePaths.config.also { Files.createDirectories(it) }
     }
 
+    /**
+     * Keep disposable cache data separate from persistent preferences so a
+     * portable install can clear cache without losing accounts or settings.
+     */
     val cacheDir: Path by lazy {
-        resolveCacheDir().also { Files.createDirectories(it) }
+        PortablePaths.cache.also { Files.createDirectories(it) }
     }
 
     fun store(name: String): Store = synchronized(stores) {
@@ -37,38 +44,6 @@ internal object DesktopStorage {
                 .sorted(Comparator.reverseOrder())
                 .filter { it != rootDir }
                 .forEach { path -> runCatching { Files.deleteIfExists(path) } }
-        }
-    }
-
-    private fun resolveAppDataDir(): Path {
-        val osName = System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT)
-        val userHome = Paths.get(System.getProperty("user.home").orEmpty())
-        return when {
-            osName.contains("mac") -> userHome.resolve("Library/Application Support/Nuvio")
-            osName.contains("win") -> {
-                val appData = System.getenv("APPDATA")?.takeIf { it.isNotBlank() }
-                (appData?.let(Paths::get) ?: userHome.resolve("AppData/Roaming")).resolve("Nuvio")
-            }
-            else -> {
-                val xdgConfig = System.getenv("XDG_CONFIG_HOME")?.takeIf { it.isNotBlank() }
-                (xdgConfig?.let(Paths::get) ?: userHome.resolve(".config")).resolve("nuvio")
-            }
-        }
-    }
-
-    private fun resolveCacheDir(): Path {
-        val osName = System.getProperty("os.name").orEmpty().lowercase(Locale.ROOT)
-        val userHome = Paths.get(System.getProperty("user.home").orEmpty())
-        return when {
-            osName.contains("mac") -> userHome.resolve("Library/Caches/Nuvio")
-            osName.contains("win") -> {
-                val localAppData = System.getenv("LOCALAPPDATA")?.takeIf { it.isNotBlank() }
-                (localAppData?.let(Paths::get) ?: userHome.resolve("AppData/Local")).resolve("Nuvio/Cache")
-            }
-            else -> {
-                val xdgCache = System.getenv("XDG_CACHE_HOME")?.takeIf { it.isNotBlank() }
-                (xdgCache?.let(Paths::get) ?: userHome.resolve(".cache")).resolve("nuvio")
-            }
         }
     }
 
@@ -163,7 +138,7 @@ internal object DesktopStorage {
         private fun persist() {
             Files.createDirectories(file.parent)
             Files.newOutputStream(file).use { output ->
-                properties.store(output, "Nuvio desktop preferences")
+                properties.store(output, "Nuvio portable desktop preferences")
             }
         }
     }
